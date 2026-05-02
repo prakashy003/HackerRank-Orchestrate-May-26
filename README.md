@@ -206,7 +206,7 @@ python code/main.py
 └── .env.example
 ```
 
-> `data/` (the 774-file support corpus provided by HackerRank) and `code/.cache/` (generated embeddings) are gitignored. Run `python code/build_index.py` after cloning to rebuild the index locally.
+> `data/` (the 774-file support corpus provided by HackerRank)
 
 ---
 
