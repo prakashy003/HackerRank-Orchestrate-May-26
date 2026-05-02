@@ -88,24 +88,7 @@ support_tickets.csv
 **`main.py` — The CLI**
 - Reads any input CSV, runs every row through the retriever + agent, writes `output.csv`
 - Flags: `--sample` (run against ground-truth sample), `--reindex` (rebuild index), `--input`/`--output` (custom paths)
-
----
-
-## The Hard Problem — ChromaDB Deadlock
-
-The original implementation used ChromaDB as the vector store. On macOS, the indexing process deadlocked at **exactly document 468/774** — reproducibly, every single run.
-
-**Root cause diagnosis:**
-ChromaDB's HNSW builder uses PyTorch's multiprocessing DataLoader internally. On macOS, Python `multiprocessing` uses `spawn` (not `fork`), which conflicts with HuggingFace's tokenizer semaphores — producing a permanent deadlock at the first large batch boundary. The result: only 2,127 chunks were indexed instead of 4,404. **Visa had zero documents in the index.** 292 HackerRank documents were silently missing — which is why retrieval was returning empty results for those tickets and accuracy was stuck at 60%.
-
-**The fix — replacing ChromaDB with a self-contained numpy implementation:**
-- Read all documents before loading the embedding model (avoids the thread/process conflict entirely)
-- Set `TOKENIZERS_PARALLELISM=false` at process start
-- Encode in controlled batches of 32 (`ENCODE_BATCH=32`)
-- Store as two plain files: `embeddings.npy` + `metadata.json`
-
-This eliminated the external C++ dependency, made the index fully reproducible, and kept query latency at ~40ms over 4,404 chunks.
-
+- 
 ---
 
 ## Prompt Engineering Journey
