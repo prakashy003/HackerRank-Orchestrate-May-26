@@ -210,6 +210,104 @@ python code/main.py
 
 ---
 
+## Roadmap — Post-Hackathon Expansion
+
+The hackathon version is a working CLI pipeline. The next phase turns it into a production-grade, deployable system across three tracks:
+
+---
+
+### Track 1 · Multi-Agent Orchestration
+
+Replace the single monolithic agent with a proper multi-agent graph:
+
+```
+Incoming ticket
+      │
+      ▼
+ Router Agent          ← reads ticket, selects specialist + sets priority
+      │
+  ┌───┴────────────────────┐
+  ▼           ▼            ▼
+HackerRank  Claude (AI)  Visa
+Specialist  Specialist   Specialist
+  Agent       Agent       Agent
+  │           │            │
+  └───────────┴────────────┘
+              │
+              ▼
+     Escalation Review Agent   ← second-pass on low-confidence decisions
+              │
+              ▼
+       Structured Output
+```
+
+Each specialist agent carries a system prompt tuned to its product domain. The escalation review agent acts as a safety net — re-evaluating borderline decisions before they surface to a human. This directly demonstrates the concept the hackathon was named after and maps to real-world support orchestration architectures.
+
+**Key engineering goals:**
+- Implement using Claude's Agents SDK with tool-use chaining across agents
+- Router emits a `confidence` score; low-confidence tickets get second-pass review
+- Each specialist agent has its own retrieval context (company-filtered corpus)
+- Full audit trail: which agent handled the ticket, which docs were retrieved, confidence at each step
+
+---
+
+### Track 2 · Production REST API + Live Demo Dashboard
+
+Wrap the pipeline in a deployable service with a browser-accessible demo:
+
+**FastAPI backend**
+- `POST /triage` — accepts a ticket, streams back the structured decision
+- `GET /tickets` — paginated history of all processed tickets
+- `GET /metrics` — accuracy, throughput, avg latency, cost per ticket
+- Async processing with a job queue so bulk CSV uploads are non-blocking
+
+**Streamlit / Gradio dashboard**
+- Paste a support ticket → watch it route live with retrieved docs shown in sidebar
+- Accuracy chart, status distribution pie, request-type breakdown
+- Agent trace panel: which specialist handled it, confidence score, token cost
+- Filterable ticket history table
+
+Goal: a live URL that can be opened during any recruiter or interview call to demonstrate the system end-to-end in under 60 seconds.
+
+---
+
+### Track 3 · CI/CD with Eval Regression
+
+Treat accuracy as a first-class metric that must not regress across code changes:
+
+**GitHub Actions pipeline**
+```
+on: push / pull_request
+  ├── build Docker image
+  ├── run smoke_test.py         (3-ticket sanity check, <10s)
+  ├── run eval.py on sample     (full 10-ticket eval)
+  ├── fail build if accuracy < 100% on either metric
+  └── post accuracy report as PR comment
+```
+
+**Eval framework enhancements**
+- Per-model comparison table (Haiku vs Sonnet vs Opus) generated on each run
+- Prompt version tracking — each system prompt change gets a version tag; accuracy history is stored
+- Confusion matrix output (status × request_type) written to `eval_report.json`
+- Cost and latency tracked per run so model tradeoffs are quantified
+
+**Docker**
+- Single `Dockerfile` — build once, run anywhere
+- `docker run` replaces the multi-step local setup
+
+---
+
+### Implementation Sequence
+
+| Phase | Deliverable | Status |
+|---|---|---|
+| Hackathon | CLI pipeline, 100% accuracy, 29 tickets | ✅ Complete |
+| Phase 1 | Multi-agent graph (router + 3 specialists + escalation reviewer) | 🔜 Next |
+| Phase 2 | FastAPI backend + Streamlit dashboard + live deployment | 🔜 Planned |
+| Phase 3 | GitHub Actions CI/CD + Docker + eval regression gate | 🔜 Planned |
+
+---
+
 ## Key Design Decisions
 
 **Why numpy over a proper vector database?**
