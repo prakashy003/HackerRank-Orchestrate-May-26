@@ -1,0 +1,27 @@
+# Environment
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Generated index (rebuild locally with python code/build_index.py)
+code/.cache/
+
+# macOS
+.DS_Store
+
+# Submission artifacts
+code.zip
+*.zip
+
+# Corpus (provided by HackerRank, not tracked)
+data/
+
+# Internal session files
+whole\ claude\ logs\ from\ today\'s\ session.txt
+log.txt
